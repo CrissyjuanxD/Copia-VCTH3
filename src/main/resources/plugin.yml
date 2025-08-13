@@ -1,0 +1,184 @@
+name: Viciont_Hardcore3_Plugin
+version: 1.5.5
+main: vct.hardcore3.ViciontHardcore3
+author: CrissyJuanXD
+api-version: 1.21
+commands:
+  revive:
+    description: Revive a player.
+    usage: /revive <player>
+    permission: viciont_hardcore3.revive
+    permission-message: No tienes permiso para usar este comando.
+  revivecoords:
+    description: Configura las coordenadas del revive.
+    usage: /revivecoords <x> <y> <z>
+    permission: viciont_hardcore3.revivecoords
+    permission-message: No tienes permiso para usar este comando.
+  resetdeathstorm:
+    description: Resetea la DeathStorm
+    usage: /resetdeathstorm
+    permission: viciont_hardcore3.resetdeathstorm
+    permission-message: No tienes permiso para usar este comando.
+  adddeathstorm:
+    description: Añade horas a la DeathStorm
+    usage: /adddeathstorm <horas>
+    permission: viciont_hardcore3.adddeathstorm
+    permission-message: No tienes permiso para usar este comando.
+  removedeathstorm:
+    description: Remueve horas de la DeathStorm
+    usage: /removedeathstorm
+    permission: viciont_hardcore3.removedeathstorm
+    permission-message: No tienes permiso para usar este comando.
+  cambiardia:
+    description: Cambia manualmente al día especificado
+    usage: /cambiardia <día>
+    permission: viciont_hardcore3.cambiardia
+    permission-message: No tienes permiso para usar este comando.
+  dia:
+    description: Muestra el día actual de Viciont Hardcore 3
+    usage: /dia
+  ping:
+    description: Muestra tu ping actual en milisegundos.
+    usage: /ping
+  giveessence:
+    description: Da al jugador una esencia específica.
+    usage: /giveessence <nombre de esencia>
+    permission: viciont_hardcore3.giveessence
+    permission-message: No tienes permiso para usar este comando.
+  ruletavct:
+    description: Comando para reproducir la animación de la ruleta.
+    usage: /ruletavct <json>
+    permission: viciont_hardcore3.ruletavct
+    permission-message: No tienes permiso para usar este comando.
+  muertevct:
+    description: Comando para reproducir la animación de la Muerte.
+    usage: /muertevct <json>
+    permission: viciont_hardcore3.muertevct
+    permission-message: No tienes permiso para usar este comando.
+  bonusvct:
+    description: Comando para reproducir la animación de Bonus.
+    usage: /bonusvct <json>
+    permission: viciont_hardcore3.bonusvct
+    permission-message: No tienes permiso para usar este comando.
+  vcth:
+    description: Localiza y maneja las estructuras de Corrupted Villages.
+    usage: /<command> locate Corrupted_Village
+    permission: vicionthardcore3.command.vcth
+    permission-message: No tienes permiso para usar este comando.
+  structure:
+    description: Genera estructuras especiales en el mundo
+    usage: /structure <nombre>
+    permission: vicionthardcore3.command.estructure
+    permission-message: No tienes permiso para usar este comando.
+  start:
+    description: Start the game
+    usage: /start <evento1|skybattle|force|logros>
+    aliases: []
+    permission: viciont_hardcore3.command.start
+    permission-message: No tienes permiso para usar este comando.
+  end:
+    description: End the game
+    usage: /end <evento1|logros>
+    aliases: []
+    permission: viciont_hardcore3.command.end
+    permission-message: No tienes permiso para usar este comando.
+  evento1:
+    description: Administra participantes del evento1.
+    usage: /evento participantes <list|add|remove> [jugador]
+    aliases: [ ]
+    permission: viciont_hardcore3.command.evento1
+    permission-message: No tienes permiso para usar este comando.
+  reset:
+    description: Resetea el evento.
+    usage: /reset <logros>
+    aliases: []
+    permission: viciont_hardcore3.command.reset
+    permission-message: No tienes permiso para usar este comando.
+  logros:
+    description: Comando para ver los logros.
+    usage: /logros
+  addlogro:
+    description: Añade un logro a un jugador.
+    usage: /addlogro <nombrelogro> <jugador> [item_lista|all]
+    permission: viciont_hardcore3.command.addlogro
+    permission-message: No tienes permiso para usar este comando.
+  removelogro:
+    description: Remueve un logro a un jugador.
+    usage: /removelogro <nombrelogro> <jugador> [item_lista|all]
+    permission: viciont_hardcore3.command.removelogro
+    permission-message: No tienes permiso para usar este comando.
+  magictp:
+    description: Teletransporta jugadores a coordenadas especificadas con efectos especiales.
+    usage: /magictp <jugador o @a> <x y z | spawn>
+    permission: viciont_hardcore3.command.magic
+    permission-message: No tienes permiso para usar este comando.
+  playdisco:
+    description: Iniciar el efecto disco.
+    usage: /playdisco
+    permission: viciont_hardcore3.command.playdisco
+    permission-message: No tienes permiso para usar este comando.
+  stopdisco:
+    description: Detener el efecto disco.
+    usage: /stopdisco
+    permission: viciont_hardcore3.command.stopdisco
+    permission-message: No tienes permiso para usar este comando.
+  spawnvct:
+    description: Spawnea un mob personalizado en tu ubicación
+    usage: /spawnvct <mob> [jugador (opcional)] [x] [y] [z]
+    permission: viciont_hardcore3.command.spawnvct
+    permission-message: No tienes permiso para usar este comando.
+  eggvct:
+    description: Da un huevo para spawnear un mob personalizado.
+    usage: /<command> <mob>
+    permission: viciont_hardcore3.command.eggvct
+    permission-message: No tienes permiso para usar este comando.
+  customspawner:
+    description: Configura un spawner para generar mobs personalizados
+    usage: /customspawner <mob>
+    permission: viciont_hardcore3.command.spawner
+    permission-message: No tienes permiso para usar este comando.
+  addtiempo:
+    description: Añade un temporizador en la bossbar.
+    usage: /addtiempo [nombre opcional] <tiempo> [on/off]
+    permission: viciont_hardcore3.command.addtiempo
+    permission-message: No tienes permiso para usar este comando.
+  removetiempo:
+    description: Elimina un temporizador de la bossbar.
+    usage: /removetiempo [nombre opcional]
+    permission: viciont_hardcore3.command.removetiempo
+    permission-message: No tienes permiso para usar este comando.
+  tiempoview:
+    description: Muestra los temporizadores activos en la bossbar.
+    usage: /tiempoview <jugador/all>
+    permission: viciont_hardcore3.command.tiempoview
+    permission-message: No tienes permiso para usar este comando.
+  givevct:
+    description: Da un item especial del plugin a un jugador.
+    usage: /givevct <item> [cantidad] [jugador]
+    permission: viciont_hardcore3.command.givevct
+    permission-message: No tienes permiso para usar este comando.
+  addnightmare:
+    description: Añade el evento Nightmare a un jugador o a todos.
+    usage: /addnightmare <player|@a>
+    permission: viciont_hardcore3.command.addnightmare
+    permission-message: No tienes permiso para usar este comando.
+  removenightmare:
+    description: Remueve el evento Nightmare a un jugador o a todos.
+    usage: /removenightmare <player|@a>
+    permission: viciont_hardcore3.command.removenightmare
+    permission-message: No tienes permiso para usar este comando.
+  resetnightmarecooldown:
+    description: Resetea el cooldown del evento Nightmare a un jugador o a todos.
+    usage: /resetnightmarecooldown <player|@a>
+    permission: viciont_hardcore3.command.resetnightmarecooldown
+    permission-message: No tienes permiso para usar este comando.
+  givespawner:
+    description: Da un spawner personalizado que genera mobs custom.
+    usage: /givespawner <mob> [jugador] | /givespawner vanilla <mob_vanilla> [jugador]
+    permission: viciont_hardcore3.command.givespawner
+    permission-message: No tienes permiso para usar este comando.
+  reloadcustomspawn:
+    description: Recarga todos los spawners custom en el mundo
+    usage: /reloadcustomspawn
+    permission: viciont_hardcore3.command.givespawner
+    permission-message: No tienes permiso para usar este comando.
