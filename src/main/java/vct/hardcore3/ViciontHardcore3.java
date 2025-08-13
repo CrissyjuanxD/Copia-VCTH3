@@ -11,6 +11,7 @@ import Events.AchievementParty.AchievementCommands;
 import Events.AchievementParty.AchievementGUI;
 import Events.AchievementParty.AchievementPartyHandler;
 import Events.DamageLogListener;
+import Events.MissionSystem.MissionRewardHandler;
 import Events.Skybattle.EventoHandler;
 import Events.UltraWitherBattle.UltraWitherEvent;
 import Handlers.*;
@@ -49,6 +50,10 @@ public class ViciontHardcore3 extends JavaPlugin implements Listener {
     private SuccessNotification successNotif;
     private ErrorNotification errorNotif;
     private NightmareMechanic nightmareMechanic;
+
+    // Sistema de Misiones
+    private MissionSystemCommands missionSystemCommands;
+    private MissionRewardHandler missionRewardHandler;
 
     // Cambios de días
 
@@ -316,6 +321,10 @@ public class ViciontHardcore3 extends JavaPlugin implements Listener {
         this.getCommand("addlogro").setTabCompleter(achievementCommands);
         this.getCommand("removelogro").setExecutor(achievementCommands);
         this.getCommand("removelogro").setTabCompleter(achievementCommands);
+
+        // Sistema de Misiones
+        missionSystemCommands = new MissionSystemCommands(this, dayHandler);
+        missionRewardHandler = new MissionRewardHandler(this, missionSystemCommands.getMissionHandler());
 
         this.getCommand("start").setExecutor((sender, command, label, args) -> {
             if (args.length == 1) {

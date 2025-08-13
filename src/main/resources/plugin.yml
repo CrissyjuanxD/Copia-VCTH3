@@ -182,3 +182,16 @@ commands:
     usage: /reloadcustomspawn
     permission: viciont_hardcore3.command.givespawner
     permission-message: No tienes permiso para usar este comando.
+  activarmision:
+    description: Activa una misión específica
+    usage: /activarmision <número>
+    permission: viciont_hardcore3.missions.admin
+    permission-message: No tienes permiso para usar este comando.
+  desactivarmision:
+    description: Desactiva una misión específica
+    usage: /desactivarmision <número>
+    permission: viciont_hardcore3.missions.admin
+    permission-message: No tienes permiso para usar este comando.
+  misiones:
+    description: Abre la interfaz del sistema de misiones
+    usage: /misiones
