@@ -1,44 +1,46 @@
 package Events.MissionSystem;
 
-import items.DoubleLifeTotem;
+import Dificultades.CustomMobs.QueenBeeHandler;
 import items.EconomyItems;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Bee;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import net.md_5.bungee.api.ChatColor;
-import vct.hardcore3.ViciontHardcore3;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class Mission4 implements Mission, Listener {
     private final JavaPlugin plugin;
     private final MissionHandler missionHandler;
-    private final DoubleLifeTotem doubleLifeTotem;
+    private final Map<UUID, Boolean> playerDamagedQueenBee = new HashMap<>();
 
     public Mission4(JavaPlugin plugin, MissionHandler missionHandler) {
         this.plugin = plugin;
         this.missionHandler = missionHandler;
-        this.doubleLifeTotem = ((ViciontHardcore3) plugin).getDoubleLifeTotemHandler();
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
     @Override
     public String getName() {
-        return "Armadura Suprema";
+        return "Cazador de Reinas";
     }
 
     @Override
     public String getDescription() {
-        return "Equípate cada pieza de armadura de netherite";
+        return "Mata a una Abeja Reina";
     }
 
     @Override
@@ -55,14 +57,8 @@ public class Mission4 implements Mission, Listener {
         vithiums.setAmount(10);
         rewards.add(vithiums);
         
-        // 1 Notch Apple
-        rewards.add(new ItemStack(Material.ENCHANTED_GOLDEN_APPLE, 1));
-        
         // 5 Manzanas doradas
         rewards.add(new ItemStack(Material.GOLDEN_APPLE, 5));
-        
-        // 1 Double Totem
-        rewards.add(doubleLifeTotem.createDoubleLifeTotem());
         
         return rewards;
     }
@@ -70,12 +66,7 @@ public class Mission4 implements Mission, Listener {
     @Override
     public void initializePlayerData(String playerName) {
         FileConfiguration data = YamlConfiguration.loadConfiguration(missionHandler.getMissionFile());
-
-        // Inicializar progreso de armadura de netherite
-        String[] armorPieces = {"helmet", "chestplate", "leggings", "boots"};
-        for (String piece : armorPieces) {
-            data.set("players." + playerName + ".missions.4.netherite_armor." + piece, false);
-        }
+        data.set("players." + playerName + ".missions.4.queen_bee_killed", false);
 
         try {
             data.save(missionHandler.getMissionFile());
@@ -90,104 +81,64 @@ public class Mission4 implements Mission, Listener {
     }
 
     @EventHandler
-    public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player)) return;
+    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
         if (!missionHandler.isMissionActive(4)) return;
-
-        Player player = (Player) event.getWhoClicked();
         
-        // Verificar si ya completó la misión
-        FileConfiguration data = YamlConfiguration.loadConfiguration(missionHandler.getMissionFile());
-        if (data.getBoolean("players." + player.getName() + ".missions.4.completed", false)) {
-            return;
+        if (!(event.getDamager() instanceof Player)) return;
+        if (!(event.getEntity() instanceof Bee)) return;
+        
+        Player player = (Player) event.getDamager();
+        Bee bee = (Bee) event.getEntity();
+        
+        // Verificar si es una Abeja Reina usando el método del QueenBeeHandler
+        if (bee.getCustomName() != null && bee.getCustomName().contains("Abeja Reina")) {
+            // Marcar que este jugador dañó a la Abeja Reina
+            playerDamagedQueenBee.put(player.getUniqueId(), true);
         }
-
-        // Verificar después de un tick
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            checkNetheriteArmor(player);
-        }, 1L);
     }
 
     @EventHandler
-    public void onItemHeld(PlayerItemHeldEvent event) {
+    public void onEntityDeath(EntityDeathEvent event) {
         if (!missionHandler.isMissionActive(4)) return;
-
-        Player player = event.getPlayer();
         
-        // Verificar si ya completó la misión
-        FileConfiguration data = YamlConfiguration.loadConfiguration(missionHandler.getMissionFile());
-        if (data.getBoolean("players." + player.getName() + ".missions.4.completed", false)) {
-            return;
-        }
-
-        // Verificar después de un tick
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            checkNetheriteArmor(player);
-        }, 1L);
-    }
-
-    private void checkNetheriteArmor(Player player) {
-        FileConfiguration data = YamlConfiguration.loadConfiguration(missionHandler.getMissionFile());
-        String playerName = player.getName();
-
-        ItemStack helmet = player.getInventory().getHelmet();
-        ItemStack chestplate = player.getInventory().getChestplate();
-        ItemStack leggings = player.getInventory().getLeggings();
-        ItemStack boots = player.getInventory().getBoots();
-
-        boolean hasHelmet = helmet != null && helmet.getType() == Material.NETHERITE_HELMET;
-        boolean hasChestplate = chestplate != null && chestplate.getType() == Material.NETHERITE_CHESTPLATE;
-        boolean hasLeggings = leggings != null && leggings.getType() == Material.NETHERITE_LEGGINGS;
-        boolean hasBoots = boots != null && boots.getType() == Material.NETHERITE_BOOTS;
-
-        // Actualizar progreso
-        boolean updated = false;
+        if (!(event.getEntity() instanceof Bee)) return;
         
-        if (hasHelmet && !data.getBoolean("players." + playerName + ".missions.4.netherite_armor.helmet", false)) {
-            data.set("players." + playerName + ".missions.4.netherite_armor.helmet", true);
-            player.sendMessage(ChatColor.GREEN + "¡Casco de netherite equipado!");
-            updated = true;
-        }
+        Bee bee = (Bee) event.getEntity();
         
-        if (hasChestplate && !data.getBoolean("players." + playerName + ".missions.4.netherite_armor.chestplate", false)) {
-            data.set("players." + playerName + ".missions.4.netherite_armor.chestplate", true);
-            player.sendMessage(ChatColor.GREEN + "¡Peto de netherite equipado!");
-            updated = true;
-        }
-        
-        if (hasLeggings && !data.getBoolean("players." + playerName + ".missions.4.netherite_armor.leggings", false)) {
-            data.set("players." + playerName + ".missions.4.netherite_armor.leggings", true);
-            player.sendMessage(ChatColor.GREEN + "¡Pantalones de netherite equipados!");
-            updated = true;
-        }
-        
-        if (hasBoots && !data.getBoolean("players." + playerName + ".missions.4.netherite_armor.boots", false)) {
-            data.set("players." + playerName + ".missions.4.netherite_armor.boots", true);
-            player.sendMessage(ChatColor.GREEN + "¡Botas de netherite equipadas!");
-            updated = true;
-        }
-
-        if (updated) {
-            try {
-                data.save(missionHandler.getMissionFile());
-            } catch (IOException e) {
-                plugin.getLogger().severe("Error al guardar progreso de Misión 4: " + e.getMessage());
-                return;
+        // Verificar si es una Abeja Reina
+        if (bee.getCustomName() != null && bee.getCustomName().contains("Abeja Reina")) {
+            // Buscar jugadores en un radio de 100 bloques que hayan dañado a la abeja
+            for (Player player : bee.getWorld().getPlayers()) {
+                if (player.getLocation().distance(bee.getLocation()) <= 100) {
+                    // Verificar si este jugador dañó a la abeja
+                    if (playerDamagedQueenBee.getOrDefault(player.getUniqueId(), false)) {
+                        String playerName = player.getName();
+                        
+                        // Verificar si ya completó la misión
+                        FileConfiguration data = YamlConfiguration.loadConfiguration(missionHandler.getMissionFile());
+                        if (data.getBoolean("players." + playerName + ".missions.4.completed", false)) {
+                            continue;
+                        }
+                        
+                        // Completar la misión
+                        data.set("players." + playerName + ".missions.4.queen_bee_killed", true);
+                        
+                        try {
+                            data.save(missionHandler.getMissionFile());
+                            player.sendMessage(ChatColor.of("#98FB98") + "¡Has matado a la Abeja Reina!");
+                            missionHandler.completeMission(playerName, 4);
+                        } catch (IOException e) {
+                            plugin.getLogger().severe("Error al guardar progreso de Misión 4: " + e.getMessage());
+                        }
+                        
+                        // Limpiar el registro de daño
+                        playerDamagedQueenBee.remove(player.getUniqueId());
+                    }
+                }
             }
-
-            // Verificar si completó toda la armadura
-            if (hasHelmet && hasChestplate && hasLeggings && hasBoots) {
-                missionHandler.completeMission(playerName, 4);
-            } else {
-                // Mostrar progreso
-                int completed = 0;
-                if (data.getBoolean("players." + playerName + ".missions.4.netherite_armor.helmet", false)) completed++;
-                if (data.getBoolean("players." + playerName + ".missions.4.netherite_armor.chestplate", false)) completed++;
-                if (data.getBoolean("players." + playerName + ".missions.4.netherite_armor.leggings", false)) completed++;
-                if (data.getBoolean("players." + playerName + ".missions.4.netherite_armor.boots", false)) completed++;
-                
-                player.sendMessage(ChatColor.YELLOW + "Progreso de armadura de netherite: " + ChatColor.GREEN + completed + ChatColor.YELLOW + "/4");
-            }
+            
+            // Limpiar todos los registros de daño para esta abeja
+            playerDamagedQueenBee.clear();
         }
     }
 }

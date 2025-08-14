@@ -28,6 +28,14 @@ public class MissionSystemCommands {
         plugin.getCommand("desactivarmision").setExecutor(missionCommands);
         plugin.getCommand("desactivarmision").setTabCompleter(missionCommands);
         
+        plugin.getCommand("addmision").setExecutor(missionCommands);
+        plugin.getCommand("addmision").setTabCompleter(missionCommands);
+        
+        plugin.getCommand("removemision").setExecutor(missionCommands);
+        plugin.getCommand("removemision").setTabCompleter(missionCommands);
+        
+        plugin.getCommand("penalizadosmisiones").setExecutor(missionCommands);
+        
         plugin.getCommand("misiones").setExecutor(missionCommands);
     }
 

@@ -1,7 +1,6 @@
 package Events.MissionSystem;
 
 import Handlers.DayHandler;
-import Handlers.FirstJoinHandler;
 import items.EconomyItems;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -16,6 +15,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import net.md_5.bungee.api.ChatColor;
 
 import java.io.File;
 import java.io.IOException;
@@ -63,6 +63,14 @@ public class MissionHandler implements Listener {
         missions.put(2, new Mission2(plugin, this));
         missions.put(3, new Mission3(plugin, this));
         missions.put(4, new Mission4(plugin, this));
+        missions.put(5, new Mission5(plugin, this));
+        missions.put(6, new Mission6(plugin, this));
+        missions.put(7, new Mission7(plugin, this));
+        missions.put(8, new Mission8(plugin, this));
+        missions.put(9, new Mission9(plugin, this));
+        missions.put(10, new Mission10(plugin, this));
+        missions.put(11, new Mission11(plugin, this));
+        missions.put(12, new Mission12(plugin, this));
     }
 
     private void ensureFileExists() {
@@ -79,12 +87,12 @@ public class MissionHandler implements Listener {
 
     public void activateMission(CommandSender sender, int missionNumber) {
         if (!missions.containsKey(missionNumber)) {
-            sender.sendMessage(ChatColor.RED + "La misión " + missionNumber + " no existe.");
+            sender.sendMessage(org.bukkit.ChatColor.RED + "La misión " + missionNumber + " no existe.");
             return;
         }
 
         if (activeMissions.contains(missionNumber)) {
-            sender.sendMessage(ChatColor.RED + "La misión " + missionNumber + " ya está activada.");
+            sender.sendMessage(org.bukkit.ChatColor.RED + "La misión " + missionNumber + " ya está activada.");
             return;
         }
 
@@ -103,21 +111,21 @@ public class MissionHandler implements Listener {
         }
 
         saveMissionData();
-        sender.sendMessage(ChatColor.GREEN + "Misión " + missionNumber + " activada correctamente.");
+        sender.sendMessage(org.bukkit.ChatColor.GREEN + "Misión " + missionNumber + " activada correctamente.");
         
         // Notificar a jugadores online
         String missionName = missions.get(missionNumber).getName();
-        Bukkit.broadcastMessage(ChatColor.GOLD + "¡Nueva misión disponible: " + ChatColor.YELLOW + missionName + "!");
+        Bukkit.broadcastMessage(org.bukkit.ChatColor.GOLD + "¡Nueva misión disponible: " + org.bukkit.ChatColor.YELLOW + missionName + "!");
     }
 
     public void deactivateMission(CommandSender sender, int missionNumber) {
         if (!missions.containsKey(missionNumber)) {
-            sender.sendMessage(ChatColor.RED + "La misión " + missionNumber + " no existe.");
+            sender.sendMessage(org.bukkit.ChatColor.RED + "La misión " + missionNumber + " no existe.");
             return;
         }
 
         if (!activeMissions.contains(missionNumber)) {
-            sender.sendMessage(ChatColor.RED + "La misión " + missionNumber + " no está activada.");
+            sender.sendMessage(org.bukkit.ChatColor.RED + "La misión " + missionNumber + " no está activada.");
             return;
         }
 
@@ -149,7 +157,7 @@ public class MissionHandler implements Listener {
             plugin.getLogger().severe("Error al guardar datos de misiones: " + e.getMessage());
         }
 
-        sender.sendMessage(ChatColor.GREEN + "Misión " + missionNumber + " desactivada correctamente.");
+        sender.sendMessage(org.bukkit.ChatColor.GREEN + "Misión " + missionNumber + " desactivada correctamente.");
     }
 
     public void initializePlayerMissionData(String playerName, int missionNumber) {
@@ -222,6 +230,10 @@ public class MissionHandler implements Listener {
                     missionDesc.replace("\"", "\\\"")
             );
 
+            // Mensaje en consola
+            String consoleMessage = player.getName() + " ha completado la misión [" + missionName + "] - " + missionDesc;
+            plugin.getLogger().info(consoleMessage);
+
             for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                 try {
                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
@@ -242,12 +254,107 @@ public class MissionHandler implements Listener {
                 }
             }
 
-            player.sendMessage(ChatColor.GREEN + "Progreso: " + ChatColor.GOLD + (completed + 1) + 
-                    ChatColor.GREEN + "/" + ChatColor.GOLD + activeMissions.size() + 
-                    ChatColor.GREEN + " misiones completadas");
+            player.sendMessage(org.bukkit.ChatColor.GREEN + "Progreso: " + org.bukkit.ChatColor.GOLD + (completed + 1) + 
+                    org.bukkit.ChatColor.GREEN + "/" + org.bukkit.ChatColor.GOLD + activeMissions.size() + 
+                    org.bukkit.ChatColor.GREEN + " misiones completadas");
         }
 
         return true;
+    }
+
+    public void addMissionToPlayer(CommandSender sender, String playerName, int missionNumber) {
+        if (!missions.containsKey(missionNumber)) {
+            sender.sendMessage(org.bukkit.ChatColor.RED + "La misión " + missionNumber + " no existe.");
+            return;
+        }
+
+        if (!activeMissions.contains(missionNumber)) {
+            sender.sendMessage(org.bukkit.ChatColor.RED + "La misión " + missionNumber + " no está activada.");
+            return;
+        }
+
+        FileConfiguration data = YamlConfiguration.loadConfiguration(missionFile);
+        
+        if (data.getBoolean("players." + playerName + ".missions." + missionNumber + ".completed", false)) {
+            sender.sendMessage(org.bukkit.ChatColor.RED + "El jugador ya tiene esta misión completada.");
+            return;
+        }
+
+        if (completeMission(playerName, missionNumber)) {
+            sender.sendMessage(org.bukkit.ChatColor.GREEN + "Misión " + missionNumber + " añadida a " + playerName);
+            
+            Player target = Bukkit.getPlayer(playerName);
+            if (target != null) {
+                target.sendMessage(org.bukkit.ChatColor.GREEN + "Un administrador te ha completado la misión: " + 
+                        missions.get(missionNumber).getName());
+            }
+        }
+    }
+
+    public void removeMissionFromPlayer(CommandSender sender, String playerName, int missionNumber) {
+        if (!missions.containsKey(missionNumber)) {
+            sender.sendMessage(org.bukkit.ChatColor.RED + "La misión " + missionNumber + " no existe.");
+            return;
+        }
+
+        FileConfiguration data = YamlConfiguration.loadConfiguration(missionFile);
+        
+        if (!data.getBoolean("players." + playerName + ".missions." + missionNumber + ".completed", false)) {
+            sender.sendMessage(org.bukkit.ChatColor.RED + "El jugador no tiene esta misión completada.");
+            return;
+        }
+
+        // Remover la misión
+        data.set("players." + playerName + ".missions." + missionNumber + ".completed", false);
+        data.set("players." + playerName + ".missions." + missionNumber + ".token_received", false);
+        data.set("players." + playerName + ".missions." + missionNumber + ".reward_claimed", false);
+        
+        // Decrementar contador
+        int completed = data.getInt("players." + playerName + ".completed", 0);
+        data.set("players." + playerName + ".completed", Math.max(0, completed - 1));
+
+        try {
+            data.save(missionFile);
+            sender.sendMessage(org.bukkit.ChatColor.GREEN + "Misión " + missionNumber + " removida de " + playerName);
+            
+            Player target = Bukkit.getPlayer(playerName);
+            if (target != null) {
+                target.sendMessage(org.bukkit.ChatColor.RED + "Un administrador te ha removido la misión: " + 
+                        missions.get(missionNumber).getName());
+            }
+        } catch (IOException e) {
+            plugin.getLogger().severe("Error al remover misión: " + e.getMessage());
+        }
+    }
+
+    public void showPenalizedPlayers(CommandSender sender) {
+        FileConfiguration data = YamlConfiguration.loadConfiguration(missionFile);
+        FileConfiguration config = plugin.getConfig();
+        
+        Set<String> allPlayers = config.getConfigurationSection("HasJoinedBefore") != null ?
+                config.getConfigurationSection("HasJoinedBefore").getKeys(false) : new HashSet<>();
+
+        List<String> penalizedPlayers = new ArrayList<>();
+        int currentDay = dayHandler.getCurrentDay();
+        
+        for (String uuid : allPlayers) {
+            String playerName = Bukkit.getOfflinePlayer(UUID.fromString(uuid)).getName();
+            if (playerName == null) continue;
+
+            String penaltyKey = "players." + playerName + ".penalty_applied_day_" + currentDay;
+            if (data.getBoolean(penaltyKey, false)) {
+                penalizedPlayers.add(playerName);
+            }
+        }
+
+        if (penalizedPlayers.isEmpty()) {
+            sender.sendMessage(org.bukkit.ChatColor.GREEN + "No hay jugadores penalizados en el día " + currentDay);
+        } else {
+            sender.sendMessage(org.bukkit.ChatColor.RED + "Jugadores penalizados en el día " + currentDay + " (" + penalizedPlayers.size() + "):");
+            for (String player : penalizedPlayers) {
+                sender.sendMessage(org.bukkit.ChatColor.GRAY + "- " + player);
+            }
+        }
     }
 
     private void giveMissionToken(Player player, int missionNumber) {
@@ -268,14 +375,14 @@ public class MissionHandler implements Listener {
         ItemStack token = new ItemStack(Material.ECHO_SHARD);
         ItemMeta meta = token.getItemMeta();
         
-        meta.setDisplayName(ChatColor.GOLD + "Ficha de Misión #" + missionNumber);
+        meta.setDisplayName(org.bukkit.ChatColor.GOLD + "Ficha de Misión #" + missionNumber);
         meta.setCustomModelData(3000 + missionNumber);
         
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.add(ChatColor.GRAY + "Usa esta ficha en un bloque de");
-        lore.add(ChatColor.LIGHT_PURPLE + "Terracota Esmaltada Rosa");
-        lore.add(ChatColor.GRAY + "para reclamar tu recompensa.");
+        lore.add(org.bukkit.ChatColor.GRAY + "Usa esta ficha en un bloque de");
+        lore.add(org.bukkit.ChatColor.LIGHT_PURPLE + "Terracota Esmaltada Rosa");
+        lore.add(org.bukkit.ChatColor.GRAY + "para reclamar tu recompensa.");
         lore.add("");
         meta.setLore(lore);
         
@@ -346,7 +453,7 @@ public class MissionHandler implements Listener {
         }
 
         if (!penalizedPlayers.isEmpty()) {
-            broadcastPenaltyResults(penalizedPlayers, currentDay);
+            // Ya no broadcast automático, se usa comando /penalizadosmisiones
         }
     }
 
@@ -384,7 +491,7 @@ public class MissionHandler implements Listener {
             player.setHealth(newMaxHealth);
         }
         
-        player.sendMessage(ChatColor.RED + "¡Has sido penalizado por no completar suficientes misiones! Perdiste 2 corazones permanentes.");
+        player.sendMessage(org.bukkit.ChatColor.RED + "¡Has sido penalizado por no completar suficientes misiones! Perdiste 2 corazones permanentes.");
     }
 
     @EventHandler
@@ -402,14 +509,6 @@ public class MissionHandler implements Listener {
             } catch (IOException e) {
                 plugin.getLogger().severe("Error al guardar penalización aplicada: " + e.getMessage());
             }
-        }
-    }
-
-    private void broadcastPenaltyResults(List<String> penalizedPlayers, int day) {
-        Bukkit.broadcastMessage(ChatColor.RED + "¡Penalización del día " + day + " aplicada!");
-        Bukkit.broadcastMessage(ChatColor.RED + "Jugadores penalizados (" + penalizedPlayers.size() + "):");
-        for (String player : penalizedPlayers) {
-            Bukkit.broadcastMessage(ChatColor.GRAY + "- " + player);
         }
     }
 

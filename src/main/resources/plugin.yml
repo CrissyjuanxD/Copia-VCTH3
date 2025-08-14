@@ -195,3 +195,18 @@ commands:
   misiones:
     description: Abre la interfaz del sistema de misiones
     usage: /misiones
+  addmision:
+    description: Añade una misión completada a un jugador
+    usage: /addmision <jugador> <número>
+    permission: viciont_hardcore3.missions.admin
+    permission-message: No tienes permiso para usar este comando.
+  removemision:
+    description: Remueve una misión completada de un jugador
+    usage: /removemision <jugador> <número>
+    permission: viciont_hardcore3.missions.admin
+    permission-message: No tienes permiso para usar este comando.
+  penalizadosmisiones:
+    description: Muestra la lista de jugadores penalizados por misiones
+    usage: /penalizadosmisiones
+    permission: viciont_hardcore3.missions.admin
+    permission-message: No tienes permiso para usar este comando.
