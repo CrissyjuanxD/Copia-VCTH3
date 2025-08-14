@@ -1,6 +1,7 @@
 package Handlers;
 
 import Events.AchievementParty.AchievementPartyHandler;
+import Commands.MissionSystemCommands;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -19,10 +20,12 @@ import java.io.IOException;
 public class FirstJoinHandler implements Listener {
     private final JavaPlugin plugin;
     private final AchievementPartyHandler achievementHandler;
+    private final MissionSystemCommands missionSystemCommands;
 
-    public FirstJoinHandler(JavaPlugin plugin) {
+    public FirstJoinHandler(JavaPlugin plugin, MissionSystemCommands missionSystemCommands) {
         this.plugin = plugin;
         this.achievementHandler = new AchievementPartyHandler(plugin);
+        this.missionSystemCommands = missionSystemCommands;
     }
 
     @EventHandler
@@ -40,6 +43,13 @@ public class FirstJoinHandler implements Listener {
             // Inicializar datos si el evento está activo
             if (achievementHandler.isEventActive()) {
                 achievementHandler.initializePlayerTracking(player.getName());
+            }
+            
+            // Inicializar datos de misiones para misiones activas
+            if (missionSystemCommands != null) {
+                for (int missionNumber : missionSystemCommands.getMissionHandler().getActiveMissions()) {
+                    missionSystemCommands.getMissionHandler().initializePlayerMissionData(player.getName(), missionNumber);
+                }
             }
 
             // Asignar el equipo "TSurvivor" si existe

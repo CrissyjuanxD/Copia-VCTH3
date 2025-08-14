@@ -210,3 +210,8 @@ commands:
     usage: /penalizadosmisiones
     permission: viciont_hardcore3.missions.admin
     permission-message: No tienes permiso para usar este comando.
+  spawntienda:
+    description: Spawnea una tienda (aldeano) en las coordenadas especificadas
+    usage: /spawntienda <Monedas|Utilidades|Varios> [x] [y] [z]
+    permission: viciont_hardcore3.shop.admin
+    permission-message: No tienes permiso para usar este comando.

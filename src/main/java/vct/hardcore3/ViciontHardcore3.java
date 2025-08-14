@@ -3,6 +3,8 @@ package vct.hardcore3;
 import Blocks.Endstalactitas;
 import Blocks.GuardianShulkerHeart;
 import Commands.*;
+import Commands.ShopCommand;
+import Commands.ShopHandler;
 import Dificultades.*;
 import Dificultades.CustomMobs.*;
 import Dificultades.Features.*;
@@ -54,6 +56,10 @@ public class ViciontHardcore3 extends JavaPlugin implements Listener {
     // Sistema de Misiones
     private MissionSystemCommands missionSystemCommands;
     private MissionRewardHandler missionRewardHandler;
+    
+    // Sistema de Tiendas
+    private ShopHandler shopHandler;
+    private ShopCommand shopCommand;
 
     // Cambios de días
 
@@ -204,7 +210,7 @@ public class ViciontHardcore3 extends JavaPlugin implements Listener {
         // Registrar eventos de chat y teams
         chatgeneral chatGeneralHandler = new chatgeneral();
         gameModeTeamHandler = new GameModeTeamHandler(this);
-        FirstJoinHandler firstJoinHandler = new FirstJoinHandler(this);
+        FirstJoinHandler firstJoinHandler = new FirstJoinHandler(this, missionSystemCommands);
         getServer().getPluginManager().registerEvents(chatGeneralHandler, this);
         getServer().getPluginManager().registerEvents(gameModeTeamHandler, this);
         getServer().getPluginManager().registerEvents(firstJoinHandler, this);
@@ -325,6 +331,12 @@ public class ViciontHardcore3 extends JavaPlugin implements Listener {
         // Sistema de Misiones
         missionSystemCommands = new MissionSystemCommands(this, dayHandler);
         missionRewardHandler = new MissionRewardHandler(this, missionSystemCommands.getMissionHandler());
+        
+        // Sistema de Tiendas
+        shopHandler = new ShopHandler(this);
+        shopCommand = new ShopCommand(this, shopHandler);
+        this.getCommand("spawntienda").setExecutor(shopCommand);
+        this.getCommand("spawntienda").setTabCompleter(shopCommand);
 
         this.getCommand("start").setExecutor((sender, command, label, args) -> {
             if (args.length == 1) {

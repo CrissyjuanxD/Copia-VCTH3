@@ -99,13 +99,13 @@ public class MissionRewardHandler implements Listener {
         Location center = blockLocation.clone().add(0.5, 0.5, 0.5);
         World world = center.getWorld();
 
-        // Fase 1: Círculo de Sonic Boom (radio 5) - permanece durante toda la animación
+        // Fase 1: Círculo de Sonic Boom (radio 5) - solo 2 segundos
         new BukkitRunnable() {
             int ticks = 0;
             
             @Override
             public void run() {
-                if (ticks >= 200) { // 10 segundos
+                if (ticks >= 40) { // 2 segundos
                     this.cancel();
                     return;
                 }
@@ -126,7 +126,7 @@ public class MissionRewardHandler implements Listener {
             }
         }.runTaskTimer(plugin, 10L, 1L);
 
-        // Fase 2: Círculo de Poof giratorio con cambios de color - también permanece
+        // Fase 2: Círculo de Poof giratorio con cambios de color
         startRotatingPoofAnimation(center, missionNumber);
     }
 
@@ -226,22 +226,21 @@ public class MissionRewardHandler implements Listener {
     }
 
     private void createPlayerBeam(Location beamEnd, int missionNumber) {
-        World world = location.getWorld();
+        World world = beamEnd.getWorld();
         
         // Encontrar jugador más cercano
-        Player nearestPlayer = null;
-        double nearestDistance = Double.MAX_VALUE;
+        Player targetPlayer = null;
         
         for (Player player : world.getPlayers()) {
-            double distance = player.getLocation().distance(beamEnd);
-            if (distance < nearestDistance && distance <= 10) {
-                nearestDistance = distance;
-                nearestPlayer = player;
+            // Buscar al jugador que activó la animación (el que tiene la ficha)
+            if (hasActiveMissionToken(player, missionNumber)) {
+                targetPlayer = player;
+                break;
             }
         }
 
-        if (nearestPlayer != null) {
-            final Player targetPlayer = nearestPlayer;
+        if (targetPlayer != null) {
+            final Player finalTargetPlayer = targetPlayer;
             
             // Crear rayo morado hacia el jugador
             new BukkitRunnable() {
@@ -251,20 +250,20 @@ public class MissionRewardHandler implements Listener {
                 public void run() {
                     if (progress >= 1.0) {
                         // Explosión de fireworks en el jugador
-                        targetPlayer.getWorld().spawnParticle(Particle.FIREWORK, 
-                                targetPlayer.getLocation(), 50, 1, 1, 1, 0.1);
-                        targetPlayer.getWorld().playSound(targetPlayer.getLocation(), 
+                        finalTargetPlayer.getWorld().spawnParticle(Particle.FIREWORK, 
+                                finalTargetPlayer.getLocation(), 50, 1, 1, 1, 0.1);
+                        finalTargetPlayer.getWorld().playSound(finalTargetPlayer.getLocation(), 
                                 Sound.ENTITY_FIREWORK_ROCKET_BLAST, 2.0f, 1.0f);
                         
                         // Dar recompensa
-                        giveRewardChest(targetPlayer, missionNumber);
+                        giveRewardChest(finalTargetPlayer, missionNumber);
                         this.cancel();
                         return;
                     }
                     
                     // Crear línea de partículas moradas
                     Location start = beamEnd;
-                    Location end = targetPlayer.getEyeLocation();
+                    Location end = finalTargetPlayer.getEyeLocation();
                     
                     for (double i = 0; i <= progress; i += 0.1) {
                         Location particleLoc = start.clone().add(
@@ -282,6 +281,18 @@ public class MissionRewardHandler implements Listener {
                 }
             }.runTaskTimer(plugin, 10L, 1L);
         }
+    }
+
+    private boolean hasActiveMissionToken(Player player, int missionNumber) {
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item != null && isMissionToken(item)) {
+                int tokenMission = getMissionNumberFromToken(item);
+                if (tokenMission == missionNumber) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private void giveRewardChest(Player player, int missionNumber) {
