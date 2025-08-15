@@ -329,12 +329,12 @@ public class AchievementPartyHandler implements Listener {
             String achievementDesc = achievements.get(achievementId).getDescription();
 
             String jsonMessage = String.format(
-                    "[\"\",{\"text\":\"\\n۞ \",\"bold\":true,\"color\":\"#1986DE\"}," +
-                            "{\"text\":\"%s\",\"bold\":true,\"color\":\"#E43185\"}," +
-                            "{\"text\":\" ha completado el logro \",\"color\":\"#1986DE\"}," +
+                    "[\"\",{\"text\":\"\\n۞ \",\"bold\":true,\"color\":\"#FF6B35\"}," +
+                            "{\"text\":\"%s\",\"bold\":true,\"color\":\"#FF1493\"}," +
+                            "{\"text\":\" ha completado el logro \",\"color\":\"#FF6B35\"}," +
                             "{\"text\":\"[\",\"color\":\"white\"}," +
-                            "{\"text\":\"%s\",\"bold\":true,\"color\":\"#AA66E7\"," +
-                            "\"hoverEvent\":{\"action\":\"show_text\",\"value\":{\"text\":\"\",\"extra\":[{\"text\":\"%s\",\"color\":\"green\"}]}}}," +
+                            "{\"text\":\"%s\",\"bold\":true,\"color\":\"#9370DB\"," +
+                            "\"hoverEvent\":{\"action\":\"show_text\",\"value\":{\"text\":\"\",\"extra\":[{\"text\":\"%s\",\"color\":\"#32CD32\"}]}}}," +
                             "{\"text\":\"]\\n\",\"color\":\"white\"}]",
                     player.getName(),
                     achievementName,

@@ -35,13 +35,13 @@ public class AchievementGUI implements Listener {
 
     public void openAchievementGUI(Player player) {
         // Crear inventario de doble cofre (54 slots)
-        Inventory gui = Bukkit.createInventory(null, 54, "§d§lFiesta de Logros");
+        Inventory gui = Bukkit.createInventory(null, 54, ChatColor.of("#FF1493") + "" + ChatColor.BOLD + "Fiesta de Logros");
 
-        // Rellenar los bordes con paneles de vidrio rosa pastel
+        // Rellenar los slots vacíos con paneles de vidrio gris
         ItemStack border = createBorderItem();
         for (int i = 0; i < 54; i++) {
-            // Solo poner en slots que no son para logros y no son del inventario del jugador
-            if (!isAchievementSlot(i) && i < 45) {
+            // Poner en todos los slots que no son para logros
+            if (!isAchievementSlot(i)) {
                 gui.setItem(i, border);
             }
         }
@@ -74,26 +74,26 @@ public class AchievementGUI implements Listener {
         ItemStack item = new ItemStack(Material.PAPER);
         ItemMeta meta = item.getItemMeta();
 
-        // Colores pasteles festivos para Achievement Party
-        String completedColor = "§a"; // Verde pastel para completados
-        String pendingColor = "§7"; // Gris para pendientes
+        // Colores festivos para Achievement Party
+        ChatColor completedColor = ChatColor.of("#FF6B35"); // Naranja festivo para completados
+        ChatColor pendingColor = ChatColor.of("#A8A8A8"); // Gris para pendientes
         
         // Asignar nombre con colores pasteles festivos
         if (isCompleted) {
-            meta.setDisplayName("§a" + achievement.getName());
+            meta.setDisplayName(completedColor + achievement.getName());
         } else {
-            meta.setDisplayName("§7" + achievement.getName());
+            meta.setDisplayName(pendingColor + achievement.getName());
         }
 
         List<String> lore = new ArrayList<>();
-        lore.add("§f" + achievement.getDescription());
+        lore.add(ChatColor.of("#F8F8FF") + achievement.getDescription());
         lore.add("");
-        lore.add(isCompleted ? "§a✔ Completado" : "§e✖ Pendiente");
+        lore.add(isCompleted ? ChatColor.of("#32CD32") + "✔ Completado" : ChatColor.of("#FFD700") + "✖ Pendiente");
 
         // Manejar logros con listas (como el de las flores)
         if (achievement instanceof Achievement2) {
             lore.add("");
-            lore.add("§d§lProgreso de flores:");
+            lore.add(ChatColor.of("#FF1493") + "" + ChatColor.BOLD + "Progreso de flores:");
 
             FileConfiguration data = YamlConfiguration.loadConfiguration(achievementsFile);
             Achievement2 flowerAchievement = (Achievement2) achievement;
@@ -102,14 +102,14 @@ public class AchievementGUI implements Listener {
                 boolean hasFlower = data.getBoolean(
                         "players." + playerName + ".achievements.collect_all_flowers.collected." + flower.name(), false);
 
-                lore.add((hasFlower ? "§b" : "§f") + "- " + formatMaterialName(flower));
+                lore.add((hasFlower ? ChatColor.of("#00BFFF") : ChatColor.of("#F8F8FF")) + "- " + formatMaterialName(flower));
             }
         }
 
         // Manejar logros con listas (achievement5)
         if (achievement instanceof Achievement5) {
             lore.add("");
-            lore.add("§6§lProgreso de bloques:");
+            lore.add(ChatColor.of("#FF8C00") + "" + ChatColor.BOLD + "Progreso de bloques:");
 
             FileConfiguration data = YamlConfiguration.loadConfiguration(achievementsFile);
             Achievement5 blockAchievement = (Achievement5) achievement;
@@ -118,19 +118,20 @@ public class AchievementGUI implements Listener {
                 boolean hasBlock = data.getBoolean(
                         "players." + playerName + ".achievements.touch_grass.broken." + block.name(), false);
 
-                lore.add((hasBlock ? "§e" : "§f") + "- " + formatMaterialName(block));
+                lore.add((hasBlock ? ChatColor.of("#FFD700") : ChatColor.of("#F8F8FF")) + "- " + formatMaterialName(block));
             }
         }
 
         // En el método createAchievementItem, añadir este caso:
         if (achievement instanceof Achievement8) {
             lore.add("");
-            lore.add("§c§lProgreso de chilladores:");
+            lore.add(ChatColor.of("#DC143C") + "" + ChatColor.BOLD + "Progreso de chilladores:");
 
             FileConfiguration data = YamlConfiguration.loadConfiguration(achievementsFile);
 
             int broken = data.getInt("players." + playerName + ".achievements.sculk_shrieker.broken", 0);
-            lore.add("§f- Rotos: §d" + broken + "§f/§d" + Achievement8.REQUIRED_SCULK_SHRIEKERS);
+            lore.add(ChatColor.of("#F8F8FF") + "- Rotos: " + ChatColor.of("#FF1493") + broken + 
+                    ChatColor.of("#F8F8FF") + "/" + ChatColor.of("#FF1493") + Achievement8.REQUIRED_SCULK_SHRIEKERS);
         }
 
         meta.setLore(lore);
@@ -143,7 +144,7 @@ public class AchievementGUI implements Listener {
     }
 
     private ItemStack createBorderItem() {
-        ItemStack border = new ItemStack(Material.PINK_STAINED_GLASS_PANE);
+        ItemStack border = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta meta = border.getItemMeta();
         meta.setDisplayName(" ");
         meta.setCustomModelData(3002);
@@ -167,7 +168,7 @@ public class AchievementGUI implements Listener {
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        if (event.getView().getTitle().equals("§d§lFiesta de Logros")) {
+        if (event.getView().getTitle().equals(ChatColor.of("#FF1493") + "" + ChatColor.BOLD + "Fiesta de Logros")) {
             event.setCancelled(true); // Cancelar cualquier interacción
         }
     }

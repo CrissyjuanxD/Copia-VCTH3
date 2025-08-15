@@ -2,14 +2,17 @@ package Commands;
 
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.MerchantRecipe;
@@ -18,36 +21,57 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ShopHandler implements Listener {
     private final JavaPlugin plugin;
     private final NamespacedKey shopKey;
+    private final NamespacedKey shopIdKey;
     private final Map<UUID, String> editingShops = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> editingSlots = new ConcurrentHashMap<>();
     private final Map<UUID, String> playersWaitingForInput = new ConcurrentHashMap<>();
-    private final Map<UUID, String> editingType = new ConcurrentHashMap<>(); // "ingredient1", "ingredient2", "result"
+    private final Map<UUID, String> editingType = new ConcurrentHashMap<>();
+    private final File tradesFile;
 
     public ShopHandler(JavaPlugin plugin) {
         this.plugin = plugin;
         this.shopKey = new NamespacedKey(plugin, "shop_type");
+        this.shopIdKey = new NamespacedKey(plugin, "shop_id");
+        this.tradesFile = new File(plugin.getDataFolder(), "tradeos.yml");
+        
+        if (!tradesFile.exists()) {
+            try {
+                tradesFile.getParentFile().mkdirs();
+                tradesFile.createNewFile();
+            } catch (IOException e) {
+                plugin.getLogger().severe("Error creando archivo tradeos.yml: " + e.getMessage());
+            }
+        }
+        
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
     public void spawnShop(String shopType, Location location) {
         Villager villager = (Villager) location.getWorld().spawnEntity(location, EntityType.VILLAGER);
         
+        String shopId = UUID.randomUUID().toString();
+        
         villager.setCustomName(ChatColor.GOLD + "" + ChatColor.BOLD + shopType);
         villager.setCustomNameVisible(true);
-        villager.setAI(true);
+        villager.setAI(false);
+        villager.setSilent(true);
         villager.setInvulnerable(true);
         villager.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(0.0);
         
         villager.getPersistentDataContainer().set(shopKey, PersistentDataType.STRING, shopType);
+        villager.getPersistentDataContainer().set(shopIdKey, PersistentDataType.STRING, shopId);
         
         // Inicializar con 12 tradeos vacíos
         initializeEmptyTrades(villager);
+        saveShopTrades(shopId, villager.getRecipes());
     }
 
     private void initializeEmptyTrades(Villager villager) {
@@ -99,23 +123,42 @@ public class ShopHandler implements Listener {
 
     private void openShopConfigGUI(Player player, Villager villager) {
         String shopType = villager.getPersistentDataContainer().get(shopKey, PersistentDataType.STRING);
+        String shopId = villager.getPersistentDataContainer().get(shopIdKey, PersistentDataType.STRING);
+        
         Inventory gui = Bukkit.createInventory(null, 54, ChatColor.GOLD + "Configurar Tienda: " + shopType);
         
-        editingShops.put(player.getUniqueId(), villager.getUniqueId().toString());
+        editingShops.put(player.getUniqueId(), shopId);
         
-        // Configurar GUI con slots para 12 tradeos
+        // Cargar tradeos guardados
+        loadShopTrades(shopId, villager);
+        
+        // Configurar GUI con slots para 12 tradeos con separaciones
         for (int trade = 0; trade < 12; trade++) {
-            int baseSlot = (trade / 3) * 9; // Cada 3 tradeos, nueva fila
-            int tradeInRow = trade % 3; // Posición en la fila (0, 1, 2)
+            int row = trade / 4; // 4 tradeos por fila
+            int col = trade % 4; // Posición en la fila
             
-            int ingredient1Slot = baseSlot + (tradeInRow * 3);
-            int ingredient2Slot = ingredient1Slot + 1;
-            int resultSlot = ingredient1Slot + 2;
+            int baseSlot = row * 9 + col * 2; // Separación de 2 slots entre tradeos
+            
+            int ingredient1Slot = baseSlot;
+            int ingredient2Slot = baseSlot + 9; // Una fila abajo
+            int resultSlot = baseSlot + 18; // Dos filas abajo
             
             // Colocar items de configuración
             gui.setItem(ingredient1Slot, createConfigSlotItem("Ingrediente 1", trade));
             gui.setItem(ingredient2Slot, createConfigSlotItem("Ingrediente 2", trade));
             gui.setItem(resultSlot, createConfigSlotItem("Resultado", trade));
+            
+            // Añadir separadores visuales
+            if (col < 3) { // No poner separador después del último tradeo de la fila
+                ItemStack separator = new ItemStack(Material.LIGHT_GRAY_STAINED_GLASS_PANE);
+                ItemMeta sepMeta = separator.getItemMeta();
+                sepMeta.setDisplayName(" ");
+                separator.setItemMeta(sepMeta);
+                
+                gui.setItem(baseSlot + 1, separator);
+                gui.setItem(baseSlot + 10, separator);
+                gui.setItem(baseSlot + 19, separator);
+            }
         }
         
         player.openInventory(gui);
@@ -131,6 +174,7 @@ public class ShopHandler implements Listener {
                 ChatColor.GRAY + "Click para configurar",
                 ChatColor.GRAY + "Escribe en chat: <item> <cantidad>",
                 ChatColor.GRAY + "Ejemplo: diamond 5",
+                ChatColor.RED + "Escribe 'eliminar' para borrar el tradeo",
                 ""
         ));
         meta.setCustomModelData(101 + tradeNumber);
@@ -172,24 +216,25 @@ public class ShopHandler implements Listener {
             player.sendMessage(ChatColor.GOLD + "Configura " + slotType + " para el Tradeo " + (tradeNumber + 1));
             player.sendMessage(ChatColor.GRAY + "Formato: <item> <cantidad>");
             player.sendMessage(ChatColor.GRAY + "Ejemplo: diamond 5 o nether_emblem 1");
+            player.sendMessage(ChatColor.RED + "Escribe 'eliminar' para borrar todo el tradeo");
             player.sendMessage(ChatColor.GRAY + "Escribe 'cancelar' para abortar");
         }
     }
 
     private String determineSlotType(int slot, int tradeNumber) {
-        int baseSlot = (tradeNumber / 3) * 9;
-        int tradeInRow = tradeNumber % 3;
-        int expectedBase = baseSlot + (tradeInRow * 3);
+        int row = tradeNumber / 4;
+        int col = tradeNumber % 4;
+        int baseSlot = row * 9 + col * 2;
         
-        if (slot == expectedBase) return "Ingrediente 1";
-        if (slot == expectedBase + 1) return "Ingrediente 2";
-        if (slot == expectedBase + 2) return "Resultado";
+        if (slot == baseSlot) return "Ingrediente 1";
+        if (slot == baseSlot + 9) return "Ingrediente 2";
+        if (slot == baseSlot + 18) return "Resultado";
         
         return null;
     }
 
     @EventHandler
-    public void onPlayerChat(AsyncPlayerChatEvent event) {
+    public void onPlayerChat(PlayerChatEvent event) {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
 
@@ -202,20 +247,34 @@ public class ShopHandler implements Listener {
             player.sendMessage(ChatColor.RED + "Configuración cancelada");
             cleanupPlayerData(uuid);
             
-            // Reabrir GUI
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                String villagerUUID = editingShops.get(uuid);
-                if (villagerUUID != null) {
-                    Villager villager = findVillagerByUUID(villagerUUID);
-                    if (villager != null) {
-                        openShopConfigGUI(player, villager);
+            // Reabrir GUI en el hilo principal
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    String shopId = editingShops.get(uuid);
+                    if (shopId != null) {
+                        Villager villager = findVillagerByShopId(shopId);
+                        if (villager != null) {
+                            openShopConfigGUI(player, villager);
+                        }
                     }
                 }
-            });
+            }.runTask(plugin);
             return;
         }
 
-        // Parsear input
+        // Manejar eliminación de tradeo completo
+        if (input.equalsIgnoreCase("eliminar")) {
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    handleTradeDelete(player, uuid);
+                }
+            }.runTask(plugin);
+            return;
+        }
+
+        // Parsear input normal
         String[] parts = input.split(" ");
         if (parts.length != 2) {
             player.sendMessage(ChatColor.RED + "Formato inválido. Usa: <item> <cantidad>");
@@ -236,37 +295,128 @@ public class ShopHandler implements Listener {
             return;
         }
 
-        // Crear el item
-        ItemStack item = createItemFromName(itemName, amount);
-        if (item == null) {
-            player.sendMessage(ChatColor.RED + "Item no reconocido: " + itemName);
-            return;
-        }
+        // Crear el item en el hilo principal
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                ItemStack item = createItemFromName(itemName, amount);
+                if (item == null) {
+                    player.sendMessage(ChatColor.RED + "Item no reconocido: " + itemName);
+                    return;
+                }
 
-        // Aplicar configuración
+                // Aplicar configuración
+                int tradeNumber = editingSlots.get(uuid);
+                String slotType = editingType.get(uuid);
+                String shopId = editingShops.get(uuid);
+                
+                if (shopId != null) {
+                    Villager villager = findVillagerByShopId(shopId);
+                    if (villager != null) {
+                        updateVillagerTrade(villager, tradeNumber, slotType, item);
+                        saveShopTrades(shopId, villager.getRecipes());
+                        player.sendMessage(ChatColor.GREEN + slotType + " configurado para Tradeo " + (tradeNumber + 1));
+                        
+                        // Actualizar GUI
+                        updateGUISlot(player, tradeNumber, slotType, item);
+                    }
+                }
+
+                cleanupPlayerData(uuid);
+                
+                // Reabrir GUI
+                String shopId = editingShops.get(uuid);
+                if (shopId != null) {
+                    Villager villager = findVillagerByShopId(shopId);
+                    if (villager != null) {
+                        openShopConfigGUI(player, villager);
+                    }
+                }
+            }
+        }.runTask(plugin);
+    }
+
+    private void handleTradeDelete(Player player, UUID uuid) {
         int tradeNumber = editingSlots.get(uuid);
-        String slotType = editingType.get(uuid);
-        String villagerUUID = editingShops.get(uuid);
+        String shopId = editingShops.get(uuid);
         
-        if (villagerUUID != null) {
-            Villager villager = findVillagerByUUID(villagerUUID);
+        if (shopId != null) {
+            Villager villager = findVillagerByShopId(shopId);
             if (villager != null) {
-                updateVillagerTrade(villager, tradeNumber, slotType, item);
-                player.sendMessage(ChatColor.GREEN + slotType + " configurado para Tradeo " + (tradeNumber + 1));
+                // Resetear el tradeo completo
+                resetTrade(villager, tradeNumber);
+                saveShopTrades(shopId, villager.getRecipes());
+                player.sendMessage(ChatColor.GREEN + "Tradeo " + (tradeNumber + 1) + " eliminado completamente");
             }
         }
 
         cleanupPlayerData(uuid);
         
         // Reabrir GUI
-        Bukkit.getScheduler().runTask(plugin, () -> {
-            if (villagerUUID != null) {
-                Villager villager = findVillagerByUUID(villagerUUID);
-                if (villager != null) {
-                    openShopConfigGUI(player, villager);
-                }
+        String shopId = editingShops.get(uuid);
+        if (shopId != null) {
+            Villager villager = findVillagerByShopId(shopId);
+            if (villager != null) {
+                openShopConfigGUI(player, villager);
             }
-        });
+        }
+    }
+
+    private void resetTrade(Villager villager, int tradeNumber) {
+        List<MerchantRecipe> recipes = new ArrayList<>(villager.getRecipes());
+        
+        // Asegurar que tenemos suficientes recetas
+        while (recipes.size() <= tradeNumber) {
+            ItemStack emptyPaper = createEmptyTradeItem();
+            MerchantRecipe recipe = new MerchantRecipe(emptyPaper, 999);
+            recipe.addIngredient(emptyPaper);
+            recipes.add(recipe);
+        }
+        
+        // Resetear el tradeo específico
+        ItemStack emptyPaper = createEmptyTradeItem();
+        MerchantRecipe emptyRecipe = new MerchantRecipe(emptyPaper, 999);
+        emptyRecipe.addIngredient(emptyPaper);
+        
+        recipes.set(tradeNumber, emptyRecipe);
+        villager.setRecipes(recipes);
+    }
+
+    private void updateGUISlot(Player player, int tradeNumber, String slotType, ItemStack item) {
+        Inventory gui = player.getOpenInventory().getTopInventory();
+        if (gui == null) return;
+        
+        int row = tradeNumber / 4;
+        int col = tradeNumber % 4;
+        int baseSlot = row * 9 + col * 2;
+        
+        int targetSlot = -1;
+        switch (slotType) {
+            case "Ingrediente 1":
+                targetSlot = baseSlot;
+                break;
+            case "Ingrediente 2":
+                targetSlot = baseSlot + 9;
+                break;
+            case "Resultado":
+                targetSlot = baseSlot + 18;
+                break;
+        }
+        
+        if (targetSlot != -1) {
+            ItemStack displayItem = item.clone();
+            ItemMeta meta = displayItem.getItemMeta();
+            if (meta != null) {
+                List<String> lore = new ArrayList<>();
+                lore.add("");
+                lore.add(ChatColor.GREEN + "Configurado: " + item.getType().name());
+                lore.add(ChatColor.GREEN + "Cantidad: " + item.getAmount());
+                lore.add("");
+                meta.setLore(lore);
+                displayItem.setItemMeta(meta);
+            }
+            gui.setItem(targetSlot, displayItem);
+        }
     }
 
     private ItemStack createItemFromName(String itemName, int amount) {
@@ -459,7 +609,44 @@ public class ShopHandler implements Listener {
             item.setAmount(amount);
         }
         
-        return item;
+        // Ejecutar en el hilo principal
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (item == null) {
+                    player.sendMessage(ChatColor.RED + "Item no reconocido: " + itemName);
+                    return;
+                }
+
+                // Aplicar configuración
+                int tradeNumber = editingSlots.get(uuid);
+                String slotType = editingType.get(uuid);
+                String shopId = editingShops.get(uuid);
+                
+                if (shopId != null) {
+                    Villager villager = findVillagerByShopId(shopId);
+                    if (villager != null) {
+                        updateVillagerTrade(villager, tradeNumber, slotType, item);
+                        saveShopTrades(shopId, villager.getRecipes());
+                        player.sendMessage(ChatColor.GREEN + slotType + " configurado para Tradeo " + (tradeNumber + 1));
+                        
+                        // Actualizar GUI
+                        updateGUISlot(player, tradeNumber, slotType, item);
+                    }
+                }
+
+                cleanupPlayerData(uuid);
+                
+                // Reabrir GUI
+                String shopId = editingShops.get(uuid);
+                if (shopId != null) {
+                    Villager villager = findVillagerByShopId(shopId);
+                    if (villager != null) {
+                        openShopConfigGUI(player, villager);
+                    }
+                }
+            }
+        }.runTask(plugin);
     }
 
     private void updateVillagerTrade(Villager villager, int tradeNumber, String slotType, ItemStack item) {
@@ -507,18 +694,86 @@ public class ShopHandler implements Listener {
         villager.setRecipes(recipes);
     }
 
-    private Villager findVillagerByUUID(String uuidString) {
+    private void saveShopTrades(String shopId, List<MerchantRecipe> recipes) {
+        FileConfiguration config = YamlConfiguration.loadConfiguration(tradesFile);
+        
+        for (int i = 0; i < recipes.size(); i++) {
+            MerchantRecipe recipe = recipes.get(i);
+            String basePath = "shops." + shopId + ".trades." + i;
+            
+            // Guardar ingredientes
+            List<ItemStack> ingredients = recipe.getIngredients();
+            for (int j = 0; j < ingredients.size(); j++) {
+                config.set(basePath + ".ingredients." + j, ingredients.get(j));
+            }
+            
+            // Guardar resultado
+            config.set(basePath + ".result", recipe.getResult());
+            config.set(basePath + ".maxUses", recipe.getMaxUses());
+        }
+        
         try {
-            UUID uuid = UUID.fromString(uuidString);
-            for (World world : Bukkit.getWorlds()) {
-                for (Villager villager : world.getEntitiesByClass(Villager.class)) {
-                    if (villager.getUniqueId().equals(uuid)) {
+            config.save(tradesFile);
+        } catch (IOException e) {
+            plugin.getLogger().severe("Error guardando tradeos: " + e.getMessage());
+        }
+    }
+
+    private void loadShopTrades(String shopId, Villager villager) {
+        FileConfiguration config = YamlConfiguration.loadConfiguration(tradesFile);
+        
+        if (!config.contains("shops." + shopId)) return;
+        
+        List<MerchantRecipe> recipes = new ArrayList<>();
+        
+        for (int i = 0; i < 12; i++) {
+            String basePath = "shops." + shopId + ".trades." + i;
+            
+            if (config.contains(basePath)) {
+                ItemStack result = config.getItemStack(basePath + ".result");
+                int maxUses = config.getInt(basePath + ".maxUses", 999);
+                
+                if (result != null) {
+                    MerchantRecipe recipe = new MerchantRecipe(result, maxUses);
+                    
+                    // Cargar ingredientes
+                    for (int j = 0; j < 2; j++) {
+                        ItemStack ingredient = config.getItemStack(basePath + ".ingredients." + j);
+                        if (ingredient != null && !ingredient.getType().isAir()) {
+                            recipe.addIngredient(ingredient);
+                        }
+                    }
+                    
+                    recipes.add(recipe);
+                } else {
+                    // Tradeo vacío
+                    ItemStack emptyPaper = createEmptyTradeItem();
+                    MerchantRecipe recipe = new MerchantRecipe(emptyPaper, 999);
+                    recipe.addIngredient(emptyPaper);
+                    recipes.add(recipe);
+                }
+            } else {
+                // Tradeo vacío
+                ItemStack emptyPaper = createEmptyTradeItem();
+                MerchantRecipe recipe = new MerchantRecipe(emptyPaper, 999);
+                recipe.addIngredient(emptyPaper);
+                recipes.add(recipe);
+            }
+        }
+        
+        villager.setRecipes(recipes);
+    }
+
+    private Villager findVillagerByShopId(String shopId) {
+        for (World world : Bukkit.getWorlds()) {
+            for (Villager villager : world.getEntitiesByClass(Villager.class)) {
+                if (villager.getPersistentDataContainer().has(shopIdKey, PersistentDataType.STRING)) {
+                    String villagerShopId = villager.getPersistentDataContainer().get(shopIdKey, PersistentDataType.STRING);
+                    if (shopId.equals(villagerShopId)) {
                         return villager;
                     }
                 }
             }
-        } catch (IllegalArgumentException e) {
-            // UUID inválido
         }
         return null;
     }

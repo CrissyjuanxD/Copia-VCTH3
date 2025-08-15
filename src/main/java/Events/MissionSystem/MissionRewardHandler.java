@@ -2,6 +2,7 @@ package Events.MissionSystem;
 
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.block.Chest;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -10,6 +11,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BlockStateMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -228,14 +230,15 @@ public class MissionRewardHandler implements Listener {
     private void createPlayerBeam(Location beamEnd, int missionNumber) {
         World world = beamEnd.getWorld();
         
-        // Encontrar jugador más cercano
+        // Encontrar jugador más cercano al bloque
         Player targetPlayer = null;
+        double closestDistance = Double.MAX_VALUE;
         
         for (Player player : world.getPlayers()) {
-            // Buscar al jugador que activó la animación (el que tiene la ficha)
-            if (hasActiveMissionToken(player, missionNumber)) {
+            double distance = player.getLocation().distance(beamEnd);
+            if (distance < closestDistance && distance <= 50) {
                 targetPlayer = player;
-                break;
+                closestDistance = distance;
             }
         }
 
@@ -283,51 +286,39 @@ public class MissionRewardHandler implements Listener {
         }
     }
 
-    private boolean hasActiveMissionToken(Player player, int missionNumber) {
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (item != null && isMissionToken(item)) {
-                int tokenMission = getMissionNumberFromToken(item);
-                if (tokenMission == missionNumber) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     private void giveRewardChest(Player player, int missionNumber) {
-        // Crear cofre físico con las recompensas dentro
+        // Obtener las recompensas de la misión
+        Mission mission = missionHandler.getMissions().get(missionNumber);
+        if (mission == null) return;
+
+        List<ItemStack> rewards = mission.getRewards();
+        
+        // Crear cofre con las recompensas dentro usando NBT
         ItemStack rewardChest = new ItemStack(Material.CHEST);
         ItemMeta chestMeta = rewardChest.getItemMeta();
         chestMeta.setDisplayName(ChatColor.of("#FFD700") + "Recompensa de Misión #" + missionNumber);
-        rewardChest.setItemMeta(chestMeta);
-
-        // Obtener las recompensas de la misión
-        Mission mission = missionHandler.getMissions().get(missionNumber);
-        if (mission != null) {
-            List<ItemStack> rewards = mission.getRewards();
+        
+        // Usar BlockStateMeta para añadir items al cofre
+        if (chestMeta instanceof BlockStateMeta) {
+            BlockStateMeta blockStateMeta = (BlockStateMeta) chestMeta;
+            Chest chestState = (Chest) blockStateMeta.getBlockState();
             
-            // Intentar dar el cofre al jugador
-            if (player.getInventory().firstEmpty() != -1) {
-                player.getInventory().addItem(rewardChest);
-                
-                // Dar las recompensas directamente al inventario
-                for (ItemStack reward : rewards) {
-                    if (player.getInventory().firstEmpty() != -1) {
-                        player.getInventory().addItem(reward);
-                    } else {
-                        // Si no hay espacio, dropear al suelo
-                        player.getWorld().dropItemNaturally(player.getLocation(), reward);
-                    }
-                }
-            } else {
-                // Si no hay espacio, dropear todo al suelo
-                player.getWorld().dropItemNaturally(player.getLocation(), rewardChest);
-                for (ItemStack reward : rewards) {
-                    player.getWorld().dropItemNaturally(player.getLocation(), reward);
-                }
-                player.sendMessage(ChatColor.of("#FFA07A") + "¡Tu inventario estaba lleno! Las recompensas se han dejado caer al suelo.");
+            // Añadir items al inventario del cofre
+            for (int i = 0; i < Math.min(rewards.size(), 27); i++) {
+                chestState.getInventory().setItem(i, rewards.get(i));
             }
+            
+            blockStateMeta.setBlockState(chestState);
+            rewardChest.setItemMeta(blockStateMeta);
+        }
+
+        // Intentar dar el cofre al jugador
+        if (player.getInventory().firstEmpty() != -1) {
+            player.getInventory().addItem(rewardChest);
+        } else {
+            // Si no hay espacio, dropear al suelo
+            player.getWorld().dropItemNaturally(player.getLocation(), rewardChest);
+            player.sendMessage(ChatColor.of("#FFA07A") + "¡Tu inventario estaba lleno! El cofre se ha dejado caer al suelo.");
         }
 
         player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1.0f, 1.0f);

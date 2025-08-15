@@ -41,7 +41,7 @@ public class MissionGUI implements Listener {
     }
 
     public void openMissionGUI(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 54, ChatColor.GOLD + "" + ChatColor.BOLD + "Sistema de Misiones");
+        Inventory gui = Bukkit.createInventory(null, 54, ChatColor.of("#FFD700") + "" + ChatColor.BOLD + "Sistema de Misiones");
 
         // Llenar slots 0-26 con paneles grises
         for (int i = 0; i <= 26; i++) {
@@ -82,13 +82,13 @@ public class MissionGUI implements Listener {
         int customModelData;
 
         if (!isActive) {
-            displayName = ChatColor.of("#A0A0A0") + "???";
+            displayName = ChatColor.of("#696969") + "???";
             customModelData = 2002;
         } else if (isCompleted) {
             displayName = ChatColor.of("#98FB98") + mission.getName();
             customModelData = 2000;
         } else {
-            displayName = ChatColor.of("#F0E68C") + mission.getName();
+            displayName = ChatColor.of("#FFE4B5") + mission.getName();
             customModelData = 2001;
         }
 
@@ -98,14 +98,14 @@ public class MissionGUI implements Listener {
         List<String> lore = new ArrayList<>();
         
         if (isActive) {
-            lore.add(ChatColor.of("#E6E6FA") + mission.getDescription());
+            lore.add(ChatColor.of("#F0F8FF") + mission.getDescription());
             lore.add("");
-            lore.add(isCompleted ? ChatColor.of("#90EE90") + "✔ Completada" : ChatColor.of("#FFB6C1") + "✖ Pendiente");
+            lore.add(isCompleted ? ChatColor.of("#32CD32") + "✔ Completada" : ChatColor.of("#FF69B4") + "✖ Pendiente");
 
             // Agregar progreso específico para misiones con listas
             addMissionSpecificProgress(mission, playerName, lore);
         } else {
-            lore.add(ChatColor.of("#E6E6FA") + "Misión no descubierta");
+            lore.add(ChatColor.of("#D3D3D3") + "Misión no descubierta");
         }
 
         meta.setLore(lore);
@@ -117,11 +117,11 @@ public class MissionGUI implements Listener {
         ItemStack item = new ItemStack(Material.PAPER);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName(ChatColor.of("#A0A0A0") + "???");
+        meta.setDisplayName(ChatColor.of("#696969") + "???");
         meta.setCustomModelData(2002);
 
         List<String> lore = new ArrayList<>();
-        lore.add(ChatColor.of("#E6E6FA") + "Misión no implementada");
+        lore.add(ChatColor.of("#D3D3D3") + "Misión no implementada");
         meta.setLore(lore);
 
         item.setItemMeta(meta);
@@ -133,7 +133,7 @@ public class MissionGUI implements Listener {
 
         if (mission instanceof Mission1) {
             lore.add("");
-            lore.add(ChatColor.of("#DDA0DD") + "Progreso de armadura:");
+            lore.add(ChatColor.of("#DA70D6") + "Progreso de armadura:");
             
             String[] armorPieces = {"helmet", "chestplate", "leggings", "boots"};
             String[] armorNames = {"Casco", "Peto", "Pantalones", "Botas"};
@@ -141,11 +141,11 @@ public class MissionGUI implements Listener {
             for (int i = 0; i < armorPieces.length; i++) {
                 boolean hasArmor = data.getBoolean(
                         "players." + playerName + ".missions.1.armor." + armorPieces[i], false);
-                lore.add((hasArmor ? ChatColor.of("#90EE90") : ChatColor.of("#E6E6FA")) + "- " + armorNames[i] + " de Diamante");
+                lore.add((hasArmor ? ChatColor.of("#32CD32") : ChatColor.of("#F0F8FF")) + "- " + armorNames[i] + " de Diamante");
             }
         } else if (mission instanceof Mission2) {
             lore.add("");
-            lore.add(ChatColor.of("#DDA0DD") + "Progreso de encantamientos:");
+            lore.add(ChatColor.of("#DA70D6") + "Progreso de encantamientos:");
             
             String[] armorPieces = {"helmet", "chestplate", "leggings", "boots"};
             String[] armorNames = {"Casco", "Peto", "Pantalones", "Botas"};
@@ -153,11 +153,11 @@ public class MissionGUI implements Listener {
             for (int i = 0; i < armorPieces.length; i++) {
                 boolean hasEnchant = data.getBoolean(
                         "players." + playerName + ".missions.2.protection." + armorPieces[i], false);
-                lore.add((hasEnchant ? ChatColor.of("#90EE90") : ChatColor.of("#E6E6FA")) + "- " + armorNames[i] + " con Protección IV");
+                lore.add((hasEnchant ? ChatColor.of("#32CD32") : ChatColor.of("#F0F8FF")) + "- " + armorNames[i] + " con Protección IV");
             }
         } else if (mission instanceof Mission5) {
             lore.add("");
-            lore.add(ChatColor.of("#F0E68C") + "Progreso de armadura:");
+            lore.add(ChatColor.of("#FFE4B5") + "Progreso de armadura:");
             
             String[] armorPieces = {"helmet", "chestplate", "leggings", "boots"};
             String[] armorNames = {"Casco", "Peto", "Pantalones", "Botas"};
@@ -169,32 +169,32 @@ public class MissionGUI implements Listener {
                 if (hasArmor && hasProtection) {
                     lore.add(ChatColor.of("#98FB98") + "- " + armorNames[i] + " de Netherite con Protección IV");
                 } else if (hasArmor) {
-                    lore.add(ChatColor.of("#F0E68C") + "- " + armorNames[i] + " de Netherite (sin Protección IV)");
+                    lore.add(ChatColor.of("#FFE4B5") + "- " + armorNames[i] + " de Netherite (sin Protección IV)");
                 } else {
-                    lore.add(ChatColor.of("#D3D3D3") + "- " + armorNames[i] + " de Netherite con Protección IV");
+                    lore.add(ChatColor.of("#F0F8FF") + "- " + armorNames[i] + " de Netherite con Protección IV");
                 }
             }
         } else if (mission instanceof Mission6) {
             lore.add("");
-            lore.add(ChatColor.of("#F0E68C") + "Progreso de eliminaciones:");
+            lore.add(ChatColor.of("#FFE4B5") + "Progreso de eliminaciones:");
             
             int zombiesKilled = data.getInt("players." + playerName + ".missions.6.corrupted_zombies_killed", 0);
             int spidersKilled = data.getInt("players." + playerName + ".missions.6.corrupted_spiders_killed", 0);
             
-            lore.add(ChatColor.of("#DDA0DD") + "- Corrupted Zombies: " + ChatColor.of("#98FB98") + zombiesKilled + ChatColor.of("#D3D3D3") + "/25");
-            lore.add(ChatColor.of("#DDA0DD") + "- Corrupted Spiders: " + ChatColor.of("#98FB98") + spidersKilled + ChatColor.of("#D3D3D3") + "/25");
+            lore.add(ChatColor.of("#DA70D6") + "- Corrupted Zombies: " + ChatColor.of("#98FB98") + zombiesKilled + ChatColor.of("#D3D3D3") + "/25");
+            lore.add(ChatColor.of("#DA70D6") + "- Corrupted Spiders: " + ChatColor.of("#98FB98") + spidersKilled + ChatColor.of("#D3D3D3") + "/25");
         } else if (mission instanceof Mission7) {
             lore.add("");
-            lore.add(ChatColor.of("#F0E68C") + "Progreso de eliminaciones:");
+            lore.add(ChatColor.of("#FFE4B5") + "Progreso de eliminaciones:");
             
             int skeletonsKilled = data.getInt("players." + playerName + ".missions.7.corrupted_skeletons_killed", 0);
             int creepersKilled = data.getInt("players." + playerName + ".missions.7.corrupted_creepers_killed", 0);
             
-            lore.add(ChatColor.of("#DDA0DD") + "- Corrupted Skeletons: " + ChatColor.of("#98FB98") + skeletonsKilled + ChatColor.of("#D3D3D3") + "/30");
-            lore.add(ChatColor.of("#DDA0DD") + "- Corrupted Creepers: " + ChatColor.of("#98FB98") + creepersKilled + ChatColor.of("#D3D3D3") + "/30");
+            lore.add(ChatColor.of("#DA70D6") + "- Corrupted Skeletons: " + ChatColor.of("#98FB98") + skeletonsKilled + ChatColor.of("#D3D3D3") + "/30");
+            lore.add(ChatColor.of("#DA70D6") + "- Corrupted Creepers: " + ChatColor.of("#98FB98") + creepersKilled + ChatColor.of("#D3D3D3") + "/30");
         } else if (mission instanceof Mission8) {
             lore.add("");
-            lore.add(ChatColor.of("#F0E68C") + "Progreso de armadura corrupta:");
+            lore.add(ChatColor.of("#FFE4B5") + "Progreso de armadura corrupta:");
             
             String[] armorPieces = {"helmet", "chestplate", "leggings", "boots"};
             String[] armorNames = {"Casco", "Peto", "Pantalones", "Botas"};
@@ -202,50 +202,50 @@ public class MissionGUI implements Listener {
             for (int i = 0; i < armorPieces.length; i++) {
                 boolean hasArmor = data.getBoolean(
                         "players." + playerName + ".missions.8.corrupted_armor." + armorPieces[i], false);
-                lore.add((hasArmor ? ChatColor.of("#98FB98") : ChatColor.of("#D3D3D3")) + "- " + armorNames[i] + " Corrupto");
+                lore.add((hasArmor ? ChatColor.of("#98FB98") : ChatColor.of("#F0F8FF")) + "- " + armorNames[i] + " Corrupto");
             }
         } else if (mission instanceof Mission9) {
             lore.add("");
-            lore.add(ChatColor.of("#F0E68C") + "Progreso de raids:");
+            lore.add(ChatColor.of("#FFE4B5") + "Progreso de raids:");
             
             int raidsCompleted = data.getInt("players." + playerName + ".missions.9.raids_completed", 0);
-            lore.add(ChatColor.of("#DDA0DD") + "- Raids completadas: " + ChatColor.of("#98FB98") + raidsCompleted + ChatColor.of("#D3D3D3") + "/5");
+            lore.add(ChatColor.of("#DA70D6") + "- Raids completadas: " + ChatColor.of("#98FB98") + raidsCompleted + ChatColor.of("#D3D3D3") + "/5");
         } else if (mission instanceof Mission10) {
             lore.add("");
-            lore.add(ChatColor.of("#F0E68C") + "Progreso de totems:");
+            lore.add(ChatColor.of("#FFE4B5") + "Progreso de totems:");
             
             boolean hasInfernal = data.getBoolean("players." + playerName + ".missions.10.totems.infernal", false);
             boolean hasSpider = data.getBoolean("players." + playerName + ".missions.10.totems.spider", false);
             boolean hasLife = data.getBoolean("players." + playerName + ".missions.10.totems.life", false);
             
-            lore.add((hasInfernal ? ChatColor.of("#98FB98") : ChatColor.of("#D3D3D3")) + "- Infernal Totem");
-            lore.add((hasSpider ? ChatColor.of("#98FB98") : ChatColor.of("#D3D3D3")) + "- Spider Totem");
-            lore.add((hasLife ? ChatColor.of("#98FB98") : ChatColor.of("#D3D3D3")) + "- Life Totem");
+            lore.add((hasInfernal ? ChatColor.of("#98FB98") : ChatColor.of("#F0F8FF")) + "- Infernal Totem");
+            lore.add((hasSpider ? ChatColor.of("#98FB98") : ChatColor.of("#F0F8FF")) + "- Spider Totem");
+            lore.add((hasLife ? ChatColor.of("#98FB98") : ChatColor.of("#F0F8FF")) + "- Life Totem");
         } else if (mission instanceof Mission11) {
             lore.add("");
-            lore.add(ChatColor.of("#F0E68C") + "Progreso de tiempo:");
+            lore.add(ChatColor.of("#FFE4B5") + "Progreso de tiempo:");
             
             long timeInMushroom = data.getLong("players." + playerName + ".missions.11.time_in_mushroom", 0);
             long requiredTime = 23500;
             
-            lore.add(ChatColor.of("#DDA0DD") + "- Tiempo en Mushroom Island: " + 
-                    ChatColor.of("#98FB98") + timeInMushroom + ChatColor.of("#D3D3D3") + "/" + requiredTime);
+            lore.add(ChatColor.of("#DA70D6") + "- Tiempo en Mushroom Island: " + 
+                    ChatColor.of("#98FB98") + timeInMushroom + ChatColor.of("#F0F8FF") + "/" + requiredTime);
         } else if (mission instanceof Mission12) {
             lore.add("");
-            lore.add(ChatColor.of("#F0E68C") + "Progreso de eliminaciones:");
+            lore.add(ChatColor.of("#FFE4B5") + "Progreso de eliminaciones:");
             
             int bombitasKilled = data.getInt("players." + playerName + ".missions.12.bombitas_killed", 0);
             int brutesKilled = data.getInt("players." + playerName + ".missions.12.brutes_killed", 0);
             
-            lore.add(ChatColor.of("#DDA0DD") + "- Bombitas: " + ChatColor.of("#98FB98") + bombitasKilled + ChatColor.of("#D3D3D3") + "/30");
-            lore.add(ChatColor.of("#DDA0DD") + "- Brutes Imperiales: " + ChatColor.of("#98FB98") + brutesKilled + ChatColor.of("#D3D3D3") + "/20");
+            lore.add(ChatColor.of("#DA70D6") + "- Bombitas: " + ChatColor.of("#98FB98") + bombitasKilled + ChatColor.of("#F0F8FF") + "/30");
+            lore.add(ChatColor.of("#DA70D6") + "- Brutes Imperiales: " + ChatColor.of("#98FB98") + brutesKilled + ChatColor.of("#F0F8FF") + "/20");
             }
         }
     }
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        if (event.getView().getTitle().equals(org.bukkit.ChatColor.GOLD + "" + org.bukkit.ChatColor.BOLD + "Sistema de Misiones")) {
+        if (event.getView().getTitle().equals(ChatColor.of("#FFD700") + "" + ChatColor.BOLD + "Sistema de Misiones")) {
             event.setCancelled(true); // Cancelar cualquier interacción
         }
     }

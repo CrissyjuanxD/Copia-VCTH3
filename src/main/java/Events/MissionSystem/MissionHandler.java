@@ -304,15 +304,15 @@ public class MissionHandler implements Listener {
             return;
         }
 
-        // Remover la misión
-        data.set("players." + playerName + ".missions." + missionNumber + ".completed", false);
-        data.set("players." + playerName + ".missions." + missionNumber + ".token_received", false);
-        data.set("players." + playerName + ".missions." + missionNumber + ".reward_claimed", false);
+        // Remover completamente todos los datos de la misión
+        data.set("players." + playerName + ".missions." + missionNumber, null);
         
         // Decrementar contador
         int completed = data.getInt("players." + playerName + ".completed", 0);
         data.set("players." + playerName + ".completed", Math.max(0, completed - 1));
 
+        // Reinicializar los datos de la misión
+        initializePlayerMissionData(playerName, missionNumber);
         try {
             data.save(missionFile);
             sender.sendMessage(org.bukkit.ChatColor.GREEN + "Misión " + missionNumber + " removida de " + playerName);
