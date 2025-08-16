@@ -18,6 +18,7 @@ import Events.Skybattle.EventoHandler;
 import Events.UltraWitherBattle.UltraWitherEvent;
 import Handlers.*;
 import Security.PingMonitor.PingMonitor;
+import Casino.CasinoManager;
 import Structures.StructureCommand;
 import TitleListener.*;
 import items.*;
@@ -107,6 +108,9 @@ public class ViciontHardcore3 extends JavaPlugin implements Listener {
     private AchievementCommands achievementCommands;
     private AchievementGUI achievementGUI;
     private UltraWitherEvent ultraWitherEvent;
+
+    // Casino
+    private CasinoManager casinoManager;
 
     // Mobs
 
@@ -337,6 +341,9 @@ public class ViciontHardcore3 extends JavaPlugin implements Listener {
         shopCommand = new ShopCommand(this, shopHandler);
         this.getCommand("spawntienda").setExecutor(shopCommand);
         this.getCommand("spawntienda").setTabCompleter(shopCommand);
+
+        // Sistema de Casino
+        casinoManager = new CasinoManager(this);
 
         this.getCommand("start").setExecutor((sender, command, label, args) -> {
             if (args.length == 1) {
