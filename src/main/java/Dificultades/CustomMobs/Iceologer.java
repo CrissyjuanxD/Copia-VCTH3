@@ -90,6 +90,7 @@ public class Iceologer implements Listener {
         iceologer.getEquipment().setItemInMainHandDropChance(0.0f);
 
         activeIceologers.add(iceologer);
+        getLogger().info("Iceologer spawneado y añadido a activeIceologers: " + iceologer.getUniqueId());
         monitorIceologer(iceologer);
         return iceologer;
     }
@@ -151,10 +152,10 @@ public class Iceologer implements Listener {
     public void onEvokerFangsSpawn(EntitySpawnEvent event) {
         if (!(event.getEntity() instanceof EvokerFangs fangs)) return;
 
-        // Buscar si hay un Iceologer cerca (30 bloques como pediste)
+        // Buscar si hay un Iceologer cerca (15 bloques)
         for (Evoker iceologer : activeIceologers) {
             if (iceologer.getWorld().equals(fangs.getWorld()) &&
-                    iceologer.getLocation().distance(fangs.getLocation()) <= 30) {
+                    iceologer.getLocation().distance(fangs.getLocation()) <= 15) {
 
                 // Cancelar el spawn del fang vanilla
                 event.setCancelled(true);
@@ -173,6 +174,7 @@ public class Iceologer implements Listener {
     private void createCustomIceFang(Evoker summoner, Location location) {
         // Verificar que la ubicación sea válida
         if (location.getBlock().getType().isSolid()) {
+            getLogger().info("Ubicación sólida, no se puede crear fang en: " + location);
             return;
         }
 
@@ -181,7 +183,7 @@ public class Iceologer implements Listener {
 
         // CONFIGURAR EL NOMBRE CUSTOM
         fang.setCustomName(ChatColor.AQUA + "" + ChatColor.BOLD + "Iceologer");
-        fang.setCustomNameVisible(false);
+        fang.setCustomNameVisible(true);
 
         // Marcar como fang de hielo
         fang.getPersistentDataContainer().set(iceFangsKey, PersistentDataType.BYTE, (byte) 1);
@@ -192,21 +194,25 @@ public class Iceologer implements Listener {
         fang.getWorld().playSound(location,
                 Sound.BLOCK_GLASS_BREAK, 0.7f, 1.2f);
 
-        plugin.getLogger().info("Fang custom creado con nombre: " + fang.getCustomName());
+        getLogger().info("Fang custom creado con nombre: " + fang.getCustomName() + " en: " + location);
     }
 
     // Interceptar el ataque normal de invocación de vexes
     @EventHandler
     public void onVexSpawn(CreatureSpawnEvent event) {
         if (event.getEntityType() != EntityType.VEX) return;
-        if (event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.SPELL) return;
+        
+        // Aceptar tanto SPELL como otros spawn reasons para mayor compatibilidad
+        if (event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.SPELL && 
+            event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.NATURAL &&
+            event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.DEFAULT) return;
 
         Vex vex = (Vex) event.getEntity();
 
         // Buscar Iceologers activos en un radio
         for (Evoker iceologer : activeIceologers) {
             if (iceologer.getWorld().equals(vex.getWorld()) &&
-                    iceologer.getLocation().distance(vex.getLocation()) <= 12) {
+                    iceologer.getLocation().distance(vex.getLocation()) <= 15) {
 
                 // Transformar el Vex en Ángel de Hielo
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
@@ -222,18 +228,24 @@ public class Iceologer implements Listener {
     // Método para transformar Vex en Ángeles de Hielo
     private void transformToIceAngel(Vex vex) {
         vex.setCustomName(ChatColor.AQUA + "" + ChatColor.BOLD + "Ángel de Hielo");
-        vex.setCustomNameVisible(false);
+        vex.setCustomNameVisible(true);
         vex.getPersistentDataContainer().set(iceAngelKey, PersistentDataType.BYTE, (byte) 1);
 
         // Mejorar atributos
         vex.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(20.0);
         vex.setHealth(20.0);
+        
+        // Añadir efectos de hielo
+        vex.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, PotionEffect.INFINITE_DURATION, 0));
+        vex.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, PotionEffect.INFINITE_DURATION, 0));
 
         // Efectos visuales
         vex.getWorld().spawnParticle(Particle.SNOWFLAKE,
                 vex.getLocation().add(0, 1, 0), 20, 0.5, 0.5, 0.5, 0.1);
         vex.getWorld().playSound(vex.getLocation(),
                 Sound.ENTITY_PLAYER_HURT_FREEZE, 0.8f, 1.2f);
+        
+        getLogger().info("Vex transformado a Ángel de Hielo: " + vex.getUniqueId());
     }
 
     private void performCustomFangsAttack(Evoker iceologer, LivingEntity target) {
@@ -322,6 +334,28 @@ public class Iceologer implements Listener {
                 entity.getWorld().playSound(entity.getLocation(),
                         Sound.ENTITY_PLAYER_HURT_FREEZE, 0.5f, 1.2f);
             }
+        }
+    }
+    
+    // Nuevo evento para manejar la muerte de Ángeles de Hielo
+    @EventHandler
+    public void onIceAngelDeath(EntityDeathEvent event) {
+        if (event.getEntity() instanceof Vex vex &&
+                vex.getPersistentDataContainer().has(iceAngelKey, PersistentDataType.BYTE)) {
+            
+            // Efectos especiales al morir
+            vex.getWorld().spawnParticle(Particle.SNOWFLAKE, vex.getLocation(), 30, 0.5, 0.5, 0.5, 0.1);
+            vex.getWorld().playSound(vex.getLocation(), Sound.BLOCK_GLASS_BREAK, 1.0f, 0.8f);
+            
+            getLogger().info("Ángel de Hielo murió: " + vex.getUniqueId());
+        }
+    }
+    
+    // Método para debug - verificar Iceologers activos
+    public void debugActiveIceologers() {
+        getLogger().info("Iceologers activos: " + activeIceologers.size());
+        for (Evoker iceologer : activeIceologers) {
+            getLogger().info("- Iceologer: " + iceologer.getUniqueId() + " en " + iceologer.getLocation());
         }
     }
 
@@ -539,6 +573,7 @@ public class Iceologer implements Listener {
 
             activeIceologers.remove(iceologer);
             blindnessApplied.remove(iceologer.getUniqueId());
+            getLogger().info("Iceologer removido de activeIceologers al morir: " + iceologer.getUniqueId());
 
             // Limpiar cooldowns de jugadores si es necesario
             playerBowCooldowns.entrySet().removeIf(entry ->
